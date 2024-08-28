@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { AppRegistry } from 'react-native';
 import { UserProvider } from './src/hooks/useUserContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MainPage from "./src/components/MainPage";

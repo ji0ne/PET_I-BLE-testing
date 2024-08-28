@@ -1,4 +1,8 @@
+import 'react-native-gesture-handler';
 import React, {useState, useEffect} from 'react';
+import { TouchableRipple } from 'react-native-paper';
+import 'react-native-reanimated';
+
 import {
   Button,
   StyleSheet,
@@ -7,6 +11,7 @@ import {
   Alert,
   PermissionsAndroid,
   Platform,
+  Pressable,
   NativeEventEmitter,
   NativeModules,
   Modal,
@@ -17,6 +22,9 @@ import {
 } from 'react-native';
 import BleManager from 'react-native-ble-manager';
 import Toast from 'react-native-toast-message';
+import RippleEffect from '../components/RippleEffect';
+import { fonts, fontSize } from '../utils/fonts';
+import { colors } from '../utils/colors';
 
 const ConnectDevice = () => {
   const [isScanning, setScanning] = useState(false);
@@ -113,29 +121,40 @@ const ConnectDevice = () => {
       }
       else{
         console.log("results" , JSON.stringify(result))
-        const allDevices= result.filter((item:any)=>item.name === null)
+        const allDevices= result.filter((item:any)=>item.name !== null)
         setDevices(allDevices)
       }
 
     });
     
-  }
-/*      {isScanning?<View>
-        <RippleEffect/>
-        </View>:<View>
-          
-          <FlatList
-          
-          data={bleDevices}
-          keyExtractor={(item,index)=>index.toString()}
-          renderItem={renderItem}
+  } //end of handleGetConnectedDevices
 
-          />
-          </View>} */
+  const renderItem = ({item, index }: any) => {
+    return(
+      <View style = {styles.bleCard}>
+          <Text style = {styles.bleText}>{item.name}</Text>
+          <TouchableOpacity style ={styles.button}>
+            <Text style = {styles.btnTxt}>연결하기</Text>
+          </TouchableOpacity>
+      </View>
+    )
+  }
+
 
   return (
     <View style={styles.container}>
-
+    {isScanning?<View style = {styles.rippleView}>
+      <RippleEffect/>
+      </View>:<View>
+        
+        <FlatList
+        
+          data = {bleDevices}
+          keyExtractor={(Item, index)=>index.toString()}
+          renderItem={renderItem}
+          />
+          </View>}  
+      
     </View>
   );
 }; // end of ConnectDevice
@@ -147,5 +166,44 @@ const styles = StyleSheet.create({
   {
     flex : 1 ,
     backgroundColor : 'blue'
+  },
+  bleCard:{
+    width : '90%',
+    padding: 10,
+    alignSelf :'center',
+    marginVertical:10,
+    backgroundColor : 'yellow',
+    elevation:5,
+    borderRadius:5,
+    flexDirection : 'row',
+    justifyContent : 'space-between'
+  },
+  rippleView :
+  {
+    flex : 1,
+    justifyContent : 'center',
+    alignItems : 'center'
+  },
+  bleText :
+  {
+    fontFamily : fonts.bold,
+    fontSize : fontSize.font18,
+    color : colors.text
+  },
+  btnTxt :
+  {
+    fontFamily : fonts.bold,
+    fontSize : fontSize.font18,
+    color : colors.white
+
+  },
+  button :
+  {
+    width : 100,
+    height : 40,
+    alignItems : 'center',
+    justifyContent : 'center',
+    borderRadius : 5,
+    backgroundColor : colors.primary
   }
 });
