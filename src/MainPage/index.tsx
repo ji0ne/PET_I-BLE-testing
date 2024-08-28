@@ -33,6 +33,9 @@ const ConnectDevice = () => {
   const BleManagerModule = NativeModules.BleManager
   const BleManagerEmitter = new NativeEventEmitter(BleManagerModule)
 
+  const [temperature,setTemperature] = useState<string | null>(null);
+  const [currentDevice,setCurrentDevice] = useState<any>(null);
+
   useEffect(() => {
     BleManager.start({showAlert: false})
       .then(() => {
@@ -129,11 +132,24 @@ const ConnectDevice = () => {
     
   } //end of handleGetConnectedDevices
 
+  const onConnect =async(item:any)=>
+  {
+    try {
+      await BleManager.connect(item.id);
+      setCurrentDevice(item)
+
+      const result = await BleManager.retrieveServices(item.id);
+      console.log('result', result);
+    } catch (error) {
+      
+    }
+  }
+
   const renderItem = ({item, index }: any) => {
     return(
       <View style = {styles.bleCard}>
           <Text style = {styles.bleText}>{item.name}</Text>
-          <TouchableOpacity style ={styles.button}>
+          <TouchableOpacity onPress={()=>onConnect(item)} style ={styles.button}>
             <Text style = {styles.btnTxt}>연결하기</Text>
           </TouchableOpacity>
       </View>
