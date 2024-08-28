@@ -43,7 +43,7 @@ function App() {
   return ( // BLE 초기화 성공 시 표시 ( 메인페이지 랜더링 )
     <UserProvider>
       <SafeAreaView style={{ flex: 1 }}>
-        <MainPage isBleInitialized={isBleInitialized}/>
+        <MainPage/>
         <Toast /> 
       </SafeAreaView>
     </UserProvider>
