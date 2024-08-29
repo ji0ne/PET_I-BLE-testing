@@ -25,21 +25,22 @@ import Toast from 'react-native-toast-message';
 import RippleEffect from '../components/RippleEffect';
 import { fonts, fontSize } from '../utils/fonts';
 import { colors } from '../utils/colors';
+import { SERVICE_UUID, TEMPERATURE_UUID } from '../Bluetooth/BleConstants';
 
 const ConnectDevice = () => {
   const [isScanning, setScanning] = useState(false);
   const [bleDevices, setDevices] = useState([]);
 
-  const BleManagerModule = NativeModules.BleManager
-  const BleManagerEmitter = new NativeEventEmitter(BleManagerModule)
+  const BleManagerModule = NativeModules.BleManager;
+  const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
-  const [temperature,setTemperature] = useState<string | null>(null);
-  const [currentDevice,setCurrentDevice] = useState<any>(null);
+  const [temperature, setTemperature] = useState<string | null>(null);
+  const [currentDevice, setCurrentDevice] = useState<any>(null);
 
   useEffect(() => {
     BleManager.start({showAlert: false})
       .then(() => {
-        //성공 시
+        // 성공 시
         Toast.show({
           type: 'success',
           text1: '블루투스가 이미 활성화되었거나 사용자가 활성화하였습니다.',
@@ -58,30 +59,30 @@ const ConnectDevice = () => {
       .then(() => {
         Toast.show({
           type: 'success',
-          text1: '블루투스가 활성화되었습니다 .',
+          text1: '블루투스가 활성화되었습니다.',
         });
 
-        //블루투스 활성화 시 권한 요청
+        // 블루투스 활성화 시 권한 요청
         requestPermisson();
       })
       .catch(error => {
         Toast.show({
           type: 'error',
-          text1: '블루투스를 활성화하지 못했습니다',
+          text1: '블루투스를 활성화하지 못했습니다.',
         });
       });
   }, []);
 
-  useEffect(()=>{
-    let stopListener=BleManagerEmitter.addListener('BleManagerStopScan',
-      ()=>{
-          setScanning(false) 
-          handleGetConnectedDevices()
-          console.log("bleManager scan Stopped")
-      })
+  useEffect(() => {
+    let stopListener = BleManagerEmitter.addListener('BleManagerStopScan',
+      () => {
+        setScanning(false);
+        handleGetConnectedDevices();
+        console.log("bleManager scan Stopped");
+      });
 
-      return()=> stopListener.remove()
-  },[])
+    return () => stopListener.remove();
+  }, []);
 
   const requestPermisson = async () => {
     const granted = await PermissionsAndroid.requestMultiple([
@@ -95,11 +96,11 @@ const ConnectDevice = () => {
     if (granted) {
       startScanning();
     }
-  }; //end of requestPermission
+  }; // end of requestPermission
 
   const startScanning = () => {
     if (!isScanning) {
-      BleManager.scan([], 10, true)
+      BleManager.scan([], 5, true)
         .then(() => {
           // Success code
           console.log('Scan started');
@@ -113,64 +114,95 @@ const ConnectDevice = () => {
           });
         });
     }
-  }; //end of StartScan
+  }; // end of StartScan
 
   const handleGetConnectedDevices = () => {
-    BleManager.getDiscoveredPeripherals().then((result:any) => {
-      if(result.length ===0)
-      {
-        console.log("no device found")
-        startScanning()
+    BleManager.getDiscoveredPeripherals().then((result: any) => {
+      if (result.length === 0) {
+        console.log("no device found");
+        startScanning();
+      } else {
+        const allDevices = result.filter((item: any) => item.name !== null);
+        setDevices(allDevices);
       }
-      else{
-        console.log("results" , JSON.stringify(result))
-        const allDevices= result.filter((item:any)=>item.name !== null)
-        setDevices(allDevices)
-      }
-
     });
-    
-  } //end of handleGetConnectedDevices
+  }; // end of handleGetConnectedDevices
 
-  const onConnect =async(item:any)=>
-  {
+  const onConnect = async (item: any) => {
     try {
       await BleManager.connect(item.id);
-      setCurrentDevice(item)
+      setCurrentDevice(item);
 
       const result = await BleManager.retrieveServices(item.id);
-      console.log('result', result);
+      onServiceDiscovered(result, item);
     } catch (error) {
-      
+      console.error("Connection error:", error);
     }
-  }
+  };
 
-  const renderItem = ({item, index }: any) => {
-    return(
-      <View style = {styles.bleCard}>
-          <Text style = {styles.bleText}>{item.name}</Text>
-          <TouchableOpacity onPress={()=>onConnect(item)} style ={styles.button}>
-            <Text style = {styles.btnTxt}>연결하기</Text>
-          </TouchableOpacity>
+  // UUID 포맷 맞추기
+  const formatUUID = (uuid: string) => {
+    return uuid.length === 4 ? `0000${uuid}-0000-1000-8000-00805f9b34fb` : uuid.toLowerCase();
+  };
+
+  const onServiceDiscovered = (result: any, item: any) => {
+    const services = result.services;
+    const characteristics = result.characteristics;
+
+    // Log 서비스와 특성 정보
+    //console.log('Services:', services);
+    //console.log('Characteristics:', characteristics);
+
+    services.forEach((service: any) => {
+      const serviceUUID = formatUUID(service.uuid);
+
+      onChangeCharacteristics(serviceUUID, characteristics, item);
+    });
+  }; // end of onServiceDiscovered
+
+  const onChangeCharacteristics = (serviceUUID: any, characteristics: any, item: any) => {
+    characteristics.forEach((characteristic: any) => {
+      const characteristicUUID = formatUUID(characteristic.characteristic);
+      
+      // Log 서비스 및 특성 UUID
+      //console.log('Service UUID:', serviceUUID);
+      //console.log('Characteristic UUID:', characteristicUUID);
+
+      // 조건 확인
+      if (serviceUUID === formatUUID('180a') && characteristicUUID === formatUUID('2a58')) {
+        BleManager.startNotification(item.id, serviceUUID, characteristicUUID)
+          .then(() => {
+            console.log("Notification Started!");
+          })
+          .catch((error) => {
+            console.log("Notification error", error);
+          });
+      }
+    });
+  };
+
+  const renderItem = ({item, index}: any) => {
+    return (
+      <View style={styles.bleCard}>
+        <Text style={styles.bleText}>{item.name}</Text>
+        <TouchableOpacity onPress={() => onConnect(item)} style={styles.button}>
+          <Text style={styles.btnTxt}>연결하기</Text>
+        </TouchableOpacity>
       </View>
-    )
-  }
-
+    );
+  };
 
   return (
     <View style={styles.container}>
-    {isScanning?<View style = {styles.rippleView}>
-      <RippleEffect/>
-      </View>:<View>
-        
+      {isScanning ? <View style={styles.rippleView}>
+        <RippleEffect />
+      </View> : <View>
         <FlatList
-        
-          data = {bleDevices}
-          keyExtractor={(Item, index)=>index.toString()}
+          data={bleDevices}
+          keyExtractor={(Item, index) => index.toString()}
           renderItem={renderItem}
-          />
-          </View>}  
-      
+        />
+      </View>}
     </View>
   );
 }; // end of ConnectDevice
@@ -178,48 +210,42 @@ const ConnectDevice = () => {
 export default ConnectDevice;
 
 const styles = StyleSheet.create({
-  container:
-  {
-    flex : 1 ,
-    backgroundColor : 'blue'
+  container: {
+    flex: 1,
+    backgroundColor: 'blue'
   },
-  bleCard:{
-    width : '90%',
+  bleCard: {
+    width: '90%',
     padding: 10,
-    alignSelf :'center',
-    marginVertical:10,
-    backgroundColor : 'yellow',
-    elevation:5,
-    borderRadius:5,
-    flexDirection : 'row',
-    justifyContent : 'space-between'
+    alignSelf: 'center',
+    marginVertical: 10,
+    backgroundColor: 'yellow',
+    elevation: 5,
+    borderRadius: 5,
+    flexDirection: 'row',
+    justifyContent: 'space-between'
   },
-  rippleView :
-  {
-    flex : 1,
-    justifyContent : 'center',
-    alignItems : 'center'
+  rippleView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  bleText :
-  {
-    fontFamily : fonts.bold,
-    fontSize : fontSize.font18,
-    color : colors.text
+  bleText: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.font18,
+    color: colors.text
   },
-  btnTxt :
-  {
-    fontFamily : fonts.bold,
-    fontSize : fontSize.font18,
-    color : colors.white
-
+  btnTxt: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.font18,
+    color: colors.white
   },
-  button :
-  {
-    width : 100,
-    height : 40,
-    alignItems : 'center',
-    justifyContent : 'center',
-    borderRadius : 5,
-    backgroundColor : colors.primary
+  button: {
+    width: 100,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    backgroundColor: colors.primary
   }
 });
