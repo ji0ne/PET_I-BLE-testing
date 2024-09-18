@@ -25,11 +25,11 @@ import Toast from 'react-native-toast-message';
 import RippleEffect from '../components/RippleEffect';
 import { fonts, fontSize } from '../utils/fonts';
 import { colors } from '../utils/colors';
-import { SERVICE_UUID, TEMPERATURE_UUID } from '../Bluetooth/BleConstants';
+import { HUMIDITY_UUID, SERVICE_UUID, STATUS_UUID, TEMPERATURE_UUID } from '../Bluetooth/BleConstants';
 
 const ConnectDevice = () => {
   const [isScanning, setScanning] = useState(false);
-  const [bleDevices, setDevices] = useState([]);
+  const [bleDevices, setBluetoothDevices] = useState([]);
 
   const BleManagerModule = NativeModules.BleManager;
   const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -46,7 +46,7 @@ const ConnectDevice = () => {
           text1: '블루투스가 이미 활성화되었거나 사용자가 활성화하였습니다.',
         });
       })
-      .catch(error => {
+      .catch(error => { //ss
         Toast.show({
           type: 'error',
           text1: '사용자가 블루투스 활성화를 거부했습니다.',
@@ -123,10 +123,31 @@ const ConnectDevice = () => {
         startScanning();
       } else {
         const allDevices = result.filter((item: any) => item.name !== null);
-        setDevices(allDevices);
+        setBluetoothDevices(allDevices);
       }
     });
   }; // end of handleGetConnectedDevices
+
+  const readCharacteristicFromEvent =(data:any) => {
+    const {service, characteristic, value} = data
+
+    if(characteristic == TEMPERATURE_UUID)
+    {
+      const temperature = byteToString(value)
+      console.log("temperature" , temperature)
+    }
+
+    if(characteristic == TEMPERATURE_UUID)
+      {
+        const temperature = byteToString(value)
+        console.log("temperature" , temperature)
+      }
+  }
+
+  const byteToString = (bytes:any) =>
+  {
+    return String.fromCharCode(...bytes)
+  }
 
   const onConnect = async (item: any) => {
     try {
@@ -145,13 +166,15 @@ const ConnectDevice = () => {
     return uuid.length === 4 ? `0000${uuid}-0000-1000-8000-00805f9b34fb` : uuid.toLowerCase();
   };
 
+
+
   const onServiceDiscovered = (result: any, item: any) => {
     const services = result.services;
     const characteristics = result.characteristics;
 
     // Log 서비스와 특성 정보
     //console.log('Services:', services);
-    //console.log('Characteristics:', characteristics);
+    console.log('Characteristics:', characteristics);
 
     services.forEach((service: any) => {
       const serviceUUID = formatUUID(service.uuid);
@@ -160,24 +183,20 @@ const ConnectDevice = () => {
     });
   }; // end of onServiceDiscovered
 
-  const onChangeCharacteristics = (serviceUUID: any, characteristics: any, item: any) => {
-    characteristics.forEach((characteristic: any) => {
+  const onChangeCharacteristics = (serviceUUID: any, result: any, item: any) => {
+    result.forEach((characteristic: any) => {
       const characteristicUUID = formatUUID(characteristic.characteristic);
       
-      // Log 서비스 및 특성 UUID
-      //console.log('Service UUID:', serviceUUID);
-      //console.log('Characteristic UUID:', characteristicUUID);
-
-      // 조건 확인
-      if (serviceUUID === formatUUID('180a') && characteristicUUID === formatUUID('2a58')) {
-        BleManager.startNotification(item.id, serviceUUID, characteristicUUID)
-          .then(() => {
-            console.log("Notification Started!");
+      if(characteristicUUID === TEMPERATURE_UUID || characteristicUUID === HUMIDITY_UUID)
+      {
+          BleManager.startNotification(item.id, serviceUUID, characteristicUUID)
+            .then(()=>{
+                console.log("notification started");
+          }).catch((error) =>{
+              console.log("notification error");
           })
-          .catch((error) => {
-            console.log("Notification error", error);
-          });
       }
+ 
     });
   };
 
