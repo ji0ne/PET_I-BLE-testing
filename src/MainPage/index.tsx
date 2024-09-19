@@ -101,7 +101,7 @@ const ConnectDevice = () => {
 
   const startScanning = () => {
     if (!isScanning) {
-      BleManager.scan([], 5, true)
+      BleManager.scan([], 7, true)
         .then(() => {
           // Success code
           console.log('Scan started');
@@ -152,9 +152,10 @@ const ConnectDevice = () => {
     return String.fromCharCode(...bytes)
   }
 
-  const onConnect = async (item: any) => {
+  const onConnect = async (item: any, index : number) => {
     try {
       await BleManager.connect(item.id);
+      console.log('Connected');
       setCurrentDevice(item);
 
       const result = await BleManager.retrieveServices(item.id);
@@ -217,7 +218,7 @@ const ConnectDevice = () => {
     return (
       <View style={styles.bleCard}>
         <Text style={styles.bleText}>{item.name}</Text>
-        <TouchableOpacity onPress={() => { currentDevice?.id === item?.id?onConnect(item)}} style={styles.button}>
+        <TouchableOpacity onPress={() => item.id === currentDevice?.id ? onDisConnect() : onConnect(item, index)} style={styles.button}>
           <Text style={styles.btnTxt}>{currentDevice?.id ===item?.id?"Disconnect":"Connect"}연결하기</Text>
         </TouchableOpacity>
       </View>
