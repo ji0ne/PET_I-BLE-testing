@@ -35,6 +35,7 @@ const ConnectDevice = () => {
   const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
   const [temperature, setTemperature] = useState<string | null>(null);
+  const [humidity, setHumidity] = useState<string | null>(null);
   const [currentDevice, setCurrentDevice] = useState<any>(null);
 
   useEffect(() => {
@@ -134,13 +135,15 @@ const ConnectDevice = () => {
     if(characteristic == TEMPERATURE_UUID)
     {
       const temperature = byteToString(value)
+      setTemperature(temperature)
       console.log("temperature" , temperature)
     }
 
-    if(characteristic == TEMPERATURE_UUID)
+    if(characteristic == HUMIDITY_UUID)
       {
-        const temperature = byteToString(value)
-        console.log("temperature" , temperature)
+        const humidity = byteToString(value)
+        setHumidity(humidity)
+        console.log("humidity" , humidity)
       }
   }
 
@@ -200,12 +203,22 @@ const ConnectDevice = () => {
     });
   };
 
+  const onDisConnect = ()=>{
+    BleManager.disconnect(currentDevice?.id).then(()=>{
+      setCurrentDevice(null)
+      console.log("disconnected")
+    })
+  }
+  
+  
+  
+  
   const renderItem = ({item, index}: any) => {
     return (
       <View style={styles.bleCard}>
         <Text style={styles.bleText}>{item.name}</Text>
-        <TouchableOpacity onPress={() => onConnect(item)} style={styles.button}>
-          <Text style={styles.btnTxt}>연결하기</Text>
+        <TouchableOpacity onPress={() => { currentDevice?.id === item?.id?onConnect(item)}} style={styles.button}>
+          <Text style={styles.btnTxt}>{currentDevice?.id ===item?.id?"Disconnect":"Connect"}연결하기</Text>
         </TouchableOpacity>
       </View>
     );
