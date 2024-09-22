@@ -123,25 +123,6 @@ const requestPermisson = async () => {
     return () => stopListener.remove();
   }, []);
 
-
-  //스캔 중지 / 연결 버튼 클릭 시 호출 
-/*  const handleGetConnectedDevices = () => {
-    //발견된 블루투스 기기들의 목록을 반환하는 프로미스 생성
-    // => 스캔된 기기들의 정보 반환 
-    BleManager.getDiscoveredPeripherals().then((result: any) => {
-      if (result.length === 0) {
-        console.log("no device found");
-        startScanning(); // 찾은 기기 없으면 다시 스캔시작 
-      } else {
-        //이름없는 (연결불가) 기기 제외
-        const allDevices = result.filter((item: any) => item.name !== null);
-        // 제외된 기기 외 모든디바이스 배열을 상태로 반환
-        setBluetoothDevices(allDevices);
-      
-      }
-    });
-  }; // end of handleGetConnectedDevices */
-
   /*class BLETemperature:
     def __init__(self, ble, name="Buds2"):  # name을 "Buds2"로 설정
         self._ble = ble  이 부분을 수정하면 peti 기기만 받을수있음*/ 
