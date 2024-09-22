@@ -27,6 +27,9 @@ import { colors } from '../utils/colors';
 import { HUMIDITY_UUID, SERVICE_UUID, STATUS_UUID, TEMPERATURE_UUID } from '../Bluetooth/BleConstants';
 
 const ConnectDevice = () => {
+
+  let deviceAdvertiseUUID = '';
+
   const [isScanning, setScanning] = useState(false);
   const [bleDevices, setBluetoothDevices] = useState([]);
 
@@ -122,7 +125,7 @@ const requestPermisson = async () => {
 
 
   //스캔 중지 / 연결 버튼 클릭 시 호출 
-  const handleGetConnectedDevices = () => {
+/*  const handleGetConnectedDevices = () => {
     //발견된 블루투스 기기들의 목록을 반환하는 프로미스 생성
     // => 스캔된 기기들의 정보 반환 
     BleManager.getDiscoveredPeripherals().then((result: any) => {
@@ -137,7 +140,37 @@ const requestPermisson = async () => {
       
       }
     });
-  }; // end of handleGetConnectedDevices
+  }; // end of handleGetConnectedDevices */
+
+  /*class BLETemperature:
+    def __init__(self, ble, name="Buds2"):  # name을 "Buds2"로 설정
+        self._ble = ble  이 부분을 수정하면 peti 기기만 받을수있음*/ 
+
+  const handleGetConnectedDevices = () => {
+
+    BleManager.getDiscoveredPeripherals().then((result:any) => {
+      if (result.length === 0)
+      {
+        console.log("주변에 서치된 기기가 없습니다.");
+        startScanning();
+        
+      } else 
+      {
+        //null이 아님 && 키워드 포함하는 기기만 필터링 
+        const filteredDevices = result.filter((item : any) =>
+          item.name && item.name.includes("Bu"));
+        if(filteredDevices.length > 0)
+        {
+          setBluetoothDevices(filteredDevices);
+        } else 
+        {
+            console.log("펫아이 디바이스 없삼;;");
+            startScanning();
+        }
+      }
+
+    });
+  };
 
 
   const startScanning = () => {
